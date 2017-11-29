@@ -561,21 +561,39 @@ clone(void *stack, int size)
     np->state = UNUSED;
     return -1;
   }*/
-
+/*
   np->pgdir = curproc->pgdir;
   np->sz = curproc->sz;
   np->parent = curproc;
   *np->tf = *curproc->tf;
 
   stack_size = curproc->tf->ebp - curproc->tf->esp;
-  np->tf->ebp = (uint)((char *)stack + size);
-  np->tf->esp = (uint)((char *)np->tf->ebp - stack_size);
+  np->tf->ebp = (uint)((uchar *)stack + size - 16);
+  np->tf->esp = (uint)((uchar *)np->tf->ebp - stack_size);
 
-  np->context->ebp = np->tf->esp;
+  np->context->ebp = np->tf->ebp;
 
   //copy over parent's stack
 
   memmove((char *)np->tf->esp, (char *)curproc->tf->esp, stack_size);
+  */
+  //memmove((char *)np->tf->esp, (char *)curproc->context, sizeof(curproc-context));
+
+  np->pgdir = curproc->pgdir;
+  np->sz = curproc->sz;
+  np->parent = curproc;
+  *np->tf = *curproc->tf;
+
+  stack_size = curproc->tf->ebp - curproc->tf->esp + 32;
+  np->tf->ebp = (uint)((uchar *)stack + size - 16);
+  np->tf->esp = (uint)((uchar *)np->tf->ebp - stack_size + 32);
+
+  np->context->ebp = np->tf->ebp;
+
+  //copy over parent's stack
+
+  memmove((char *)(np->tf->esp - 16), (char *)(curproc->tf->esp - 16), stack_size);
+
 
   // Clear %eax so that fork returns 0 in the child.
   np->tf->eax = 0;
