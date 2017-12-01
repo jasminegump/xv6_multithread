@@ -3,6 +3,13 @@
 #include "user.h"
 #include "x86.h"
 
+// define some global lock and pass
+// lock
+
+// lock init
+//lock acquire
+//lock release
+
 struct lock_t {
   uint locked;       // Is the lock held?
 };
@@ -12,6 +19,19 @@ uint token = 0;
 int num_thread = 4;
 struct lock_t lock;
 uint total_pass = 6;
+/*
+typedef struct 
+{
+	uint field1;
+	lock_t field2;sx
+} arguments;
+
+typedef struct 
+{
+	uint pass;
+	uint thread_id;
+} critical_data;
+*/
 
 void
 lock_a_initlock(struct lock_t *lk)
@@ -20,11 +40,10 @@ lock_a_initlock(struct lock_t *lk)
 }
 
 void
-lock_a_acquire(struct lock_t *lk)
+lock_a_acquire(struct lock_t *lk, int thread_id)
 {
-  //while (thread_id != token);
+  while (thread_id != token);
   // The xchg is atomic.
-  
   while(xchg(&lk->locked, 1) != 0)
     ;
 
@@ -56,9 +75,6 @@ thread_create(void *(*start_routine)(void *), void *arg)
 {
   int pid;
   char *sp;
-  //int* ret_pass;
-  //int pass_val = 0;
-  int thread_id = *(int*)arg;
   //char i;
 
   sp = (char *)malloc(4096); // Page size 
@@ -69,74 +85,88 @@ thread_create(void *(*start_routine)(void *), void *arg)
   pid = clone(sp, 4096);
   if(pid == 0)
   {
+  	//while(1);
   	//printf(1, "Created child!\n");
   	//printf(1, "PID: %d\n", pid);
-    while (pass_num < (total_pass))
-    {
-      if (token == thread_id)
-      {
-      start_routine(arg); 
-      }
-
-    }
-
-    free(sp);
-    exit();
+    start_routine(arg); 
+  	while(1);
+  }
+  else
+  {
+  	//start_routine(arg);
+  	//while(1);
+	//printf(1, "Parent!\n");
+	//printf(1, "PID: %d\n", pid);
+	//start_routine(arg);
   }
 }
 
+
 void*
-frisbee_game(void* arg)
+do_nothing(void* arg)
 {
 
   int thread_id = *(int*)arg;
+	//while(1);
+  lock_a_acquire(&lock, thread_id);
+  
+	printf(1, "Thread_ID: %d\n", thread_id );
+  printf(1, "Pass Number: %d\n", pass_num );
 
-  //while(1);
-
-  if(pass_num < total_pass)
-  {
-
-    lock_a_acquire(&lock);
-
-    printf(1, "Pass Number: %d\n", pass_num );
-
-    pass_num = pass_num + 1;
-    if (thread_id == (num_thread - 1))
-      {
-        token = 0;
-      }
-    else 
-      {
-        token = token + 1;
-      }
-    printf(1, "thread %d is passing token to thread %d\n", thread_id, token);
-
-
-  }
-
+  pass_num = pass_num + 1;
+  if (thread_id == (num_thread - 1))
+    {
+      token = 0;
+    }
+  else 
+    {
+      token = token + 1;
+    }
   lock_a_release(&lock);
-  return 0;
 
+	//while(1);
+	return 0;
 }
+
+
+
+// start routine(arg)  
+// acquire_lock ()
+// modify global
+// release lock
+// return 0
+
 
 int
 main(void)
 {
-  
+  //int x = 4;
   int thread_id[num_thread];
+  //int total_pass = 6;
   token = 0;
 
+  //initialize lock;
+
+ // lock.locked = 0;
   lock_a_initlock(&lock);
+
+
+  //lock_t lock = 0;
+
+  // initalize lock
+  //lock_t lock = 0;
+
+  // initialize global (thread number, pass number, , lock that was just initialized)
+  
 
   // arg to pass in = thread ID
   for (int i = 0; i < num_thread; i++)
   {
     thread_id[i] = i;
-    thread_create(&frisbee_game, &thread_id[i]);
+    thread_create(&do_nothing, &thread_id[i]);
   }
 
-  wait();
-  printf(1, "I'm finished.\n");
+  while(1);
   exit();
 }
 

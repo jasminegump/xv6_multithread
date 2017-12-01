@@ -22,4 +22,3 @@
 #define SYS_close  21
 #define SYS_getyear  22
 #define SYS_clone  23
-#define SYS_threadwait  24

@@ -107,10 +107,3 @@ sys_clone(void)
   argint(1, &size);
   return clone(sp, size);
 }
-
-int
-sys_threadwait(void)
-{
-  return threadwait();
-}
-
