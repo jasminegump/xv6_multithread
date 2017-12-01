@@ -108,3 +108,9 @@ sys_clone(void)
   return clone(sp, size);
 }
 
+int
+sys_threadwait(void)
+{
+  return threadwait();
+}
+

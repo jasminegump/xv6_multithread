@@ -105,6 +105,7 @@ extern int sys_write(void);
 extern int sys_uptime(void);
 extern int sys_getyear(void);
 extern int sys_clone(void);
+extern int sys_threadwait(void);
 
 static int (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
@@ -130,6 +131,7 @@ static int (*syscalls[])(void) = {
 [SYS_close]   sys_close,
 [SYS_getyear]   sys_getyear,
 [SYS_clone]   sys_clone,
+[SYS_threadwait] sys_threadwait
 };
 
 void

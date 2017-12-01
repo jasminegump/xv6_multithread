@@ -109,8 +109,8 @@ thread_create(void *(*start_routine)(void *), void *arg)
 {
   int pid;
   char *sp;
-  int* ret_pass;
-  int pass_val = 0;
+  //int* ret_pass;
+  //int pass_val = 0;
   int thread_id = *(int*)arg;
   //char i;
 
@@ -125,18 +125,23 @@ thread_create(void *(*start_routine)(void *), void *arg)
   	//while(1);
   	//printf(1, "Created child!\n");
   	//printf(1, "PID: %d\n", pid);
-    while (pass_val <= (total_pass))
+    while (pass_num < (total_pass))
     {
       if (token == thread_id)
       {
-      ret_pass = start_routine(arg); 
+      start_routine(arg); 
       //printf(1, "Pass val: %d\n", pass_val);
-      pass_val = (int)ret_pass;
+      //pass_val = (int)ret_pass;
       }
 
     }
-
-  	while(1);
+    //exit();
+    pid = threadwait();
+    //pid = wait();
+    printf(1, "PID exit: %d", pid);
+    //exit();
+   // exit();
+  	//while(1);
   }
   else
   {
@@ -264,6 +269,7 @@ main(void)
     thread_id[i] = i;
     thread_create(&frisbee_game, &thread_id[i]);
   }
+
 
   while(1);
   exit();
