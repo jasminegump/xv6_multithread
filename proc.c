@@ -16,6 +16,7 @@ struct {
 static struct proc *initproc;
 
 int nextpid = 1;
+int thread_count = 0;
 extern void forkret(void);
 extern void trapret(void);
 
@@ -232,6 +233,7 @@ exit(void)
   struct proc *curproc = myproc();
   struct proc *p;
   int fd;
+  thread_count = thread_count + 1;
 
   if(curproc == initproc)
     panic("init exiting");
@@ -287,11 +289,15 @@ wait(void)
         continue;
       havekids = 1;
       if(p->state == ZOMBIE){
-        // Found one.
+        if((p->pgdir != curproc->pgdir ) && (thread_count >= 6))  //  greater than 2 so it's not shell or init 
+        //if((p->pgdir != curproc->pgdir ))
+        {
+          kfree(p->kstack);
+          freevm(p->pgdir);
+        }
         pid = p->pid;
-        kfree(p->kstack);
+
         p->kstack = 0;
-        freevm(p->pgdir);
         p->pid = 0;
         p->parent = 0;
         p->name[0] = 0;
@@ -327,13 +333,19 @@ threadwait(void)
     // Scan through table looking for exited children.
     havekids = 0;
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-      if((p->pgdir != curproc->pgdir) || (p->parent != curproc->parent))
+      if(p->parent != curproc)
+      //if((p->pgdir != curproc->pgdir) || (p->parent != curproc))
         continue;
       havekids = 1;
+      curproc->haveLiveSiblings = 1;
+      if(p->state == SLEEPING)
+      {
+        p->state = ZOMBIE;
+      }
       if(p->state == ZOMBIE){
         // Found one.
         pid = p->pid;
-        kfree(p->kstack);
+        //kfree(p->kstack);
         p->kstack = 0;
         //freevm(p->pgdir);
         p->pid = 0;

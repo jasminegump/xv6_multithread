@@ -67,6 +67,11 @@ lock_a_acquire(struct lock_t *lk, int thread_id)
     while(xchg(&lk->locked, 1) != 0)
       ;
 
+    // Tell the C compiler and the processor to not move loads or stores
+    // past this point, to ensure that the critical section's memory
+    // references happen after the lock is acquired.
+    __sync_synchronize();
+
     printf(1, "Pass Number: %d\n", pass_num );
 
     pass_num = pass_num + 1;
@@ -80,10 +85,7 @@ lock_a_acquire(struct lock_t *lk, int thread_id)
       }
     printf(1, "thread %d is passing token to thread %d\n", thread_id, token);
 
-  // Tell the C compiler and the processor to not move loads or stores
-  // past this point, to ensure that the critical section's memory
-  // references happen after the lock is acquired.
-  __sync_synchronize();
+
   }
 }
 
@@ -136,9 +138,18 @@ thread_create(void *(*start_routine)(void *), void *arg)
 
     }
     //exit();
-    pid = threadwait();
+
+    free(sp);
+    exit();
+
+    
+    /*pid = threadwait();
     //pid = wait();
     printf(1, "PID exit: %d", pid);
+    if (pid == -1)
+    {
+      free(sp);
+    }*/
     //exit();
    // exit();
   	//while(1);
@@ -270,8 +281,10 @@ main(void)
     thread_create(&frisbee_game, &thread_id[i]);
   }
 
-
-  while(1);
+  //exit();
+  wait();
+  //while(1);
+  printf(1, "I'm finished.\n");
   exit();
 }
 
