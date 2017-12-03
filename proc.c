@@ -292,8 +292,9 @@ wait(void)
         if((p->pgdir != curproc->pgdir ) && (thread_count >= 6))  //  greater than 2 so it's not shell or init 
         //if((p->pgdir != curproc->pgdir ))
         {
-          kfree(p->kstack);
-          freevm(p->pgdir);
+          // JASMINE NOTE- this is commented out for now!!!
+          //kfree(p->kstack);
+          //freevm(p->pgdir);
         }
         pid = p->pid;
 

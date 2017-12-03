@@ -9,9 +9,9 @@ struct lock_t {
 
 uint pass_num = 0;
 uint token = 0;
-uint num_thread;
+uint num_thread = 20;
 struct lock_t lock;
-uint total_pass;
+uint total_pass = 40;
 
 void
 lock_a_initlock(struct lock_t *lk)
@@ -58,7 +58,7 @@ thread_create(void *(*start_routine)(void *), void *arg)
   char *sp;
   //int* ret_pass;
   //int pass_val = 0;
-  int thread_id = *(int*)arg;
+  //int thread_id = *(int*)arg;
   //char i;
 
   sp = (char *)malloc(4096); // Page size 
@@ -73,10 +73,10 @@ thread_create(void *(*start_routine)(void *), void *arg)
   	//printf(1, "PID: %d\n", pid);
     while (pass_num < (total_pass))
     {
-      if (token == thread_id)
-      {
+      //if (token == thread_id)
+      //{
       start_routine(arg); 
-      }
+      //}
 
     }
 
@@ -90,16 +90,21 @@ frisbee_game(void* arg)
 {
 
   int thread_id = *(int*)arg;
+  uint temp_thread_id;
 
-  //while(1);
+  // read
+  do
+  {
+    lock_a_acquire(&lock);
+    temp_thread_id = token;
+    lock_a_release(&lock);
+  } while((temp_thread_id != thread_id) && (pass_num < total_pass));
 
+  // write
   if(pass_num < total_pass)
   {
-
     lock_a_acquire(&lock);
-
     printf(1, "Pass Number: %d\n", pass_num );
-
     pass_num = pass_num + 1;
     if (thread_id == (num_thread - 1))
       {
@@ -110,11 +115,9 @@ frisbee_game(void* arg)
         token = token + 1;
       }
     printf(1, "thread %d is passing token to thread %d\n", thread_id, token);
-
-
+    lock_a_release(&lock);
   }
 
-  lock_a_release(&lock);
   return 0;
 
 }
@@ -124,7 +127,9 @@ main(int argc, char *argv[])
 {
   
   int thread_id[num_thread];
-  int arg1;
+
+  // couldn't get this quite working for numbers above 10 so it's commented out.
+  /*int arg1;
   int arg2;
 
   arg1 = (atoi(argv[1]));
@@ -141,9 +146,8 @@ main(int argc, char *argv[])
 
   //printf(1, "arg1 %d\n", atoi(argv[1]));
   //printf(1, "arg2 %d\n", atoi(argv[2]));
+*/
 
-  //num_thread = 10;
-  //pass_num = 20;
   token = 0;
 
   lock_a_initlock(&lock);

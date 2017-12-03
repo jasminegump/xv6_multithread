@@ -4,23 +4,27 @@
 #include "x86.h"
 
 struct lock_t {
-  uint locked;       // Is the lock held?
+  uint state;      // state can be has lock (1) or must_wait (0)
+  uint last_queue; // place after the one with the lock
+  uint locked;
 };
 
 uint pass_num = 0;
 uint token = 0;
-uint num_thread;
+uint num_thread = 20;
 struct lock_t lock;
-uint total_pass;
+uint total_pass = 40;
+uint seq_number;
 
 void
-lock_a_initlock(struct lock_t *lk)
+lock_c_initlock(struct lock_t *lk)
 {
+  seq_number = 0;
   lk->locked = 0;
 }
 
 void
-lock_a_acquire(struct lock_t *lk)
+lock_c_acquire(struct lock_t *lk)
 {
   //while (thread_id != token);
   // The xchg is atomic.
@@ -32,17 +36,19 @@ lock_a_acquire(struct lock_t *lk)
   // past this point, to ensure that the critical section's memory
   // references happen after the lock is acquired.
   __sync_synchronize();
+  seq_number = seq_number + 1;
 }
 
 // Release the lock.
 void
-lock_a_release(struct lock_t *lk)
+lock_c_release(struct lock_t *lk)
 {
   // Tell the C compiler and the processor to not move loads or stores
   // past this point, to ensure that all the stores in the critical
   // section are visible to other cores before the lock is released.
   // Both the C compiler and the hardware may re-order loads and
   // stores; __sync_synchronize() tells them both not to.
+  seq_number = seq_number + 1;
   __sync_synchronize();
 
   // Release the lock, equivalent to lk->locked = 0.
@@ -58,7 +64,7 @@ thread_create(void *(*start_routine)(void *), void *arg)
   char *sp;
   //int* ret_pass;
   //int pass_val = 0;
-  int thread_id = *(int*)arg;
+  //int thread_id = *(int*)arg;
   //char i;
 
   sp = (char *)malloc(4096); // Page size 
@@ -69,15 +75,11 @@ thread_create(void *(*start_routine)(void *), void *arg)
   pid = clone(sp, 4096);
   if(pid == 0)
   {
-  	//printf(1, "Created child!\n");
-  	//printf(1, "PID: %d\n", pid);
+    //printf(1, "Created child!\n");
+    //printf(1, "PID: %d\n", pid);
     while (pass_num < (total_pass))
     {
-      if (token == thread_id)
-      {
       start_routine(arg); 
-      }
-
     }
 
     free(sp);
@@ -90,31 +92,37 @@ frisbee_game(void* arg)
 {
 
   int thread_id = *(int*)arg;
+  uint temp_seq;
 
-  //while(1);
+
+
+    // reads
+    do
+    {
+      do
+      {
+        temp_seq = seq_number;
+      } while((seq_number != temp_seq) && (seq_number % 2 == 1)); // Keep trying until Seq number is EVEN and local seq = global lock seq
+    }
+    while((token != thread_id) && (pass_num < total_pass));
 
   if(pass_num < total_pass)
   {
-
-    lock_a_acquire(&lock);
-
+    // write
+    lock_c_acquire(&lock);
     printf(1, "Pass Number: %d\n", pass_num );
-
     pass_num = pass_num + 1;
     if (thread_id == (num_thread - 1))
-      {
-        token = 0;
-      }
+    {
+      token = 0;
+    }
     else 
-      {
-        token = token + 1;
-      }
+    {
+      token = token + 1;
+    }
     printf(1, "thread %d is passing token to thread %d\n", thread_id, token);
-
-
+    lock_c_release(&lock);
   }
-
-  lock_a_release(&lock);
   return 0;
 
 }
@@ -124,29 +132,10 @@ main(int argc, char *argv[])
 {
   
   int thread_id[num_thread];
-  int arg1;
-  int arg2;
 
-  arg1 = (atoi(argv[1]));
-  arg2 = (atoi(argv[2]));
-  num_thread = (uint)arg1;
-  total_pass = (uint)arg2;
-
-// get it working with anything greater than 9
-  if (argc != 3)
-  {
-    printf(1, "You need at least 3 arguments.\n");
-    //return 0;
-  }
-
-  //printf(1, "arg1 %d\n", atoi(argv[1]));
-  //printf(1, "arg2 %d\n", atoi(argv[2]));
-
-  //num_thread = 10;
-  //pass_num = 20;
   token = 0;
 
-  lock_a_initlock(&lock);
+  lock_c_initlock(&lock);
 
   // arg to pass in = thread ID
   for (int i = 0; i < num_thread; i++)
