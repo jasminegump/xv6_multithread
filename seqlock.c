@@ -133,6 +133,31 @@ main(int argc, char *argv[])
   
   int thread_id[num_thread];
 
+
+  // couldn't get this quite working for numbers above 10 so it's commented out.
+  int arg1;
+  int arg2;
+
+  arg1 = (atoi(argv[1]));
+  arg2 = (atoi(argv[2]));
+
+  num_thread = (uint)arg1;
+  total_pass = (uint)arg2;
+  printf(1, "%d\n", num_thread);
+  printf(1, "%d\n", total_pass);
+
+// get it working with anything greater than 9
+  if (argc != 3)
+  {
+    printf(1, "You need at least 3 arguments.\n");
+    //return 0;
+  }
+
+  //printf(1, "arg1 %d\n", atoi(argv[1]));
+  //printf(1, "arg2 %d\n", atoi(argv[2]));
+
+
+
   token = 0;
 
   lock_c_initlock(&lock);
@@ -144,7 +169,10 @@ main(int argc, char *argv[])
     thread_create(&frisbee_game, &thread_id[i]);
   }
 
-  wait();
+  for (int i = 0; i < num_thread; i++)
+  {
+    wait(); 
+  }
   printf(1, "I'm finished.\n");
   exit();
 }

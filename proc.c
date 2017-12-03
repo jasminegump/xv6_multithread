@@ -285,16 +285,17 @@ wait(void)
     // Scan through table looking for exited children.
     havekids = 0;
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+
       if(p->parent != curproc)
         continue;
       havekids = 1;
       if(p->state == ZOMBIE){
-        if((p->pgdir != curproc->pgdir ) && (thread_count >= 6))  //  greater than 2 so it's not shell or init 
-        //if((p->pgdir != curproc->pgdir ))
+      //  if((p->pgdir != curproc->pgdir ) && (thread_count >= 6))  //  greater than 2 so it's not shell or init 
+        if((p->pgdir != curproc->pgdir ))
         {
           // JASMINE NOTE- this is commented out for now!!!
-          //kfree(p->kstack);
-          //freevm(p->pgdir);
+          kfree(p->kstack);
+          freevm(p->pgdir);
         }
         pid = p->pid;
 
@@ -597,6 +598,7 @@ clone(void *stack, int size)
   stack_size = curproc->tf->ebp - curproc->tf->esp + 32;
   np->tf->ebp = (uint)((uchar *)stack + size - 16);
   np->tf->esp = (uint)((uchar *)np->tf->ebp - stack_size + 32);
+  //np->tf->eip = curproc->tf->eip;
 
   np->context->ebp = np->tf->ebp;
   np->thread_flag = 1;

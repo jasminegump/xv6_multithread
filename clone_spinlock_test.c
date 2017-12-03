@@ -159,7 +159,10 @@ main(int argc, char *argv[])
     thread_create(&frisbee_game, &thread_id[i]);
   }
 
-  wait();
+  for (int i = 0; i < num_thread; i++)
+  {
+    wait(); 
+  }
   printf(1, "I'm finished.\n");
   exit();
 }

@@ -7,6 +7,7 @@ struct lock_t {
   uint state;      // state can be has lock (1) or must_wait (0)
   uint last_queue; // place after the one with the lock
   uint locked;
+  uint current_idx;
 };
 
 typedef struct  {
@@ -18,7 +19,7 @@ uint pass_num = 0;
 uint token = 0;
 uint num_thread = 4;
 struct lock_t lock;
-uint total_pass = 40;
+uint total_pass = 6;
 
 struct lock_t1 *array_lock;
 
@@ -52,6 +53,7 @@ lock_b_initlock(struct lock_t *lk, uint pass)
   queue_last = 0;
 
   lk->locked = 0;
+  lk->current_idx = 0;
 }
 
 void
@@ -64,16 +66,37 @@ lock_b_acquire(struct lock_t *lk)
   while(xchg(&lk->locked, 1) != 0)
     ;
 
+
   // Tell the C compiler and the processor to not move loads or stores
   // past this point, to ensure that the critical section's memory
   // references happen after the lock is acquired.
   __sync_synchronize();
+  lock_array[queue_last] = 0;
+  if(queue_last >= num_thread)
+  {
+    queue_last = 0;
+  }
+  else
+  {
+    queue_last = queue_last + 1;
+  }
+
 }
 
 // Release the lock.
 void
 lock_b_release(struct lock_t *lk)
 {
+
+  if(lk->current_idx >= num_thread)
+  {
+    lk->current_idx = 0;
+  }
+  else
+  {
+    lk->current_idx = lk->current_idx + 1;
+  }
+  lock_array[lk->current_idx] = 1;
   // Tell the C compiler and the processor to not move loads or stores
   // past this point, to ensure that all the stores in the critical
   // section are visible to other cores before the lock is released.
@@ -142,18 +165,6 @@ frisbee_game(void* arg)
   {
     lock_b_acquire(&lock);
 
-    lock_array[queue_last] = 0;
-    if(queue_last >= num_thread)
-    {
-      queue_last = 0;
-    }
-    else
-    {
-      queue_last = queue_last + 1;
-    }
-
-    lock_array[queue_last] = 1;
-
     printf(1, "Pass Number: %d\n", pass_num );
 
     pass_num = pass_num + 1;
@@ -166,7 +177,8 @@ frisbee_game(void* arg)
         token = token + 1;
     }
 
-    printf(1, "thread %d is passing token to thread %d\n", thread_id, token);      
+    printf(1, "thread %d is passing token to thread %d\n", thread_id, token);  
+
     lock_b_release(&lock);
   }
 
@@ -191,7 +203,10 @@ main(int argc, char *argv[])
     thread_create(&frisbee_game, &thread_id[i]);
   }
 
-  wait();
+  for (int i = 0; i < num_thread; i++)
+  {
+    wait(); 
+  }
   printf(1, "I'm finished.\n");
   exit();
 }
