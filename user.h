@@ -23,7 +23,8 @@ int getpid(void);
 char* sbrk(int);
 int sleep(int);
 int uptime(void);
-int getyear(int);
+int starttime(void);
+int endtime(void);
 int clone(void*, int);
 
 // ulib.c

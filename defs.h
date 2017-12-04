@@ -121,8 +121,8 @@ int             wait(void);
 void            wakeup(void*);
 void            yield(void);
 int             clone(void *, int);
-int             threadwait(void);
-
+int 			starttime(void);
+int 			endtime(void);
 // swtch.S
 void            swtch(struct context**, struct context*);
 

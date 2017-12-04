@@ -90,12 +90,18 @@ sys_uptime(void)
   return xticks;
 }
 
+// JASMINE COMMENT
+// I added the following three to support the system calls for cloning and time measurements
 int
-sys_getyear(void)
+sys_starttime(void)
 {
-    int thisyear;
-    argint(0, &thisyear);
-    return thisyear;
+  return starttime();
+}
+
+int
+sys_endtime(void)
+{
+  return endtime();
 }
 
 int

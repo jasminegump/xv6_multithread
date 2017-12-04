@@ -174,11 +174,9 @@ UPROGS=\
 	_usertests\
 	_wc\
 	_zombie\
-	_get_year_test\
-	_clone_test\
-	_clone_spinlock_test\
-	_arraylock\
-	_seqlock\
+	_frisbee\
+	_frisbee_array\
+	_frisbee_seq\
 
 fs.img: mkfs README $(UPROGS)
 	./mkfs fs.img README $(UPROGS)
@@ -247,7 +245,7 @@ qemu-nox-gdb: fs.img xv6.img .gdbinit
 
 EXTRA=\
 	mkfs.c ulib.c user.h cat.c echo.c forktest.c grep.c kill.c\
-	ln.c ls.c mkdir.c rm.c stressfs.c usertests.c wc.c zombie.c get_year_test.c clone_test.c clone_spinlock_test.c arraylock.c seqlock.c\
+	ln.c ls.c mkdir.c rm.c stressfs.c usertests.c wc.c zombie.c frisbee.c frisbee_array.c frisbee_seq.c\
 	printf.c umalloc.c\
 	README dot-bochsrc *.pl toc.* runoff runoff1 runoff.list\
 	.gdbinit.tmpl gdbutil\

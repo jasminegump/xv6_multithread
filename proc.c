@@ -15,12 +15,30 @@ struct {
 
 static struct proc *initproc;
 
+
 int nextpid = 1;
-int thread_count = 0;
+int tick = 0;
 extern void forkret(void);
 extern void trapret(void);
 
 static void wakeup1(void *chan);
+
+
+// The following two system calls are used in order to keep track of the
+// number of times the scheduler scheduled a different process.
+// I use this later in order to perform a time measurement between the different lock mechanisms
+int
+starttime(void)
+{
+  tick = 0;
+  return tick;
+}
+
+int
+endtime(void)
+{
+  return tick;
+}
 
 void
 pinit(void)
@@ -233,7 +251,6 @@ exit(void)
   struct proc *curproc = myproc();
   struct proc *p;
   int fd;
-  thread_count = thread_count + 1;
 
   if(curproc == initproc)
     panic("init exiting");
@@ -290,10 +307,10 @@ wait(void)
         continue;
       havekids = 1;
       if(p->state == ZOMBIE){
-      //  if((p->pgdir != curproc->pgdir ) && (thread_count >= 6))  //  greater than 2 so it's not shell or init 
+	    // JASMINE COMMENT
+		// Don't free memory if there's another process with same pgdir because that means a child may still be running
         if((p->pgdir != curproc->pgdir ))
         {
-          // JASMINE NOTE- this is commented out for now!!!
           kfree(p->kstack);
           freevm(p->pgdir);
         }
@@ -339,6 +356,7 @@ scheduler(void)
   c->proc = 0;
   
   for(;;){
+
     // Enable interrupts on this processor.
     sti();
 
@@ -347,6 +365,9 @@ scheduler(void)
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
       if(p->state != RUNNABLE)
         continue;
+	  // JASMINE COMMENT
+	  // This is where I increment the number of times a process was scheduled
+      tick = tick + 1;
 
       // Switch to chosen process.  It is the process's job
       // to release ptable.lock and then reacquire it
@@ -546,10 +567,9 @@ procdump(void)
 }
 
 
-
-// Create a new process copying p as the parent.
-// Sets up stack to return as if from system call.
-// Caller must set state of returned proc to RUNNABLE.
+// JASMINE COMMENT
+// Created clone by copying over fork process
+// It takes in a stack pointer and stack size and uses it to create a child process
 int
 clone(void *stack, int size)
 {
@@ -563,50 +583,23 @@ clone(void *stack, int size)
     return -1;
   }
 
-
-  // Copy process state from proc.
-  /*
-  if((np->pgdir = copyuvm(curproc->pgdir, curproc->sz)) == 0){
-    kfree(np->kstack);
-    np->kstack = 0;
-    np->state = UNUSED;
-    return -1;
-  }*/
-/*
+  // First copy over all of parent's settings over so child can essentially be replica of parent
+  // This also allows the child to share the address space with the parent
   np->pgdir = curproc->pgdir;
   np->sz = curproc->sz;
   np->parent = curproc;
   *np->tf = *curproc->tf;
 
-  stack_size = curproc->tf->ebp - curproc->tf->esp;
+  // Prep to over parent's stack into new allocated child stack
+  // Need to copy over an extra 16 (4 words) above EBP which are EBX, EDX, ECX, EAX
+  // This is because EAX is later used by the child process as a link register so the child can continue 
+  // in user program
+  stack_size = curproc->tf->ebp - curproc->tf->esp + 16;
   np->tf->ebp = (uint)((uchar *)stack + size - 16);
-  np->tf->esp = (uint)((uchar *)np->tf->ebp - stack_size);
+  np->tf->esp = (uint)((uchar *)np->tf->ebp - stack_size + 16);
 
-  np->context->ebp = np->tf->ebp;
-
-  //copy over parent's stack
-
-  memmove((char *)np->tf->esp, (char *)curproc->tf->esp, stack_size);
-  */
-  //memmove((char *)np->tf->esp, (char *)curproc->context, sizeof(curproc-context));
-
-  np->pgdir = curproc->pgdir;
-  np->sz = curproc->sz;
-  np->parent = curproc;
-  *np->tf = *curproc->tf;
-
-  stack_size = curproc->tf->ebp - curproc->tf->esp + 32;
-  np->tf->ebp = (uint)((uchar *)stack + size - 16);
-  np->tf->esp = (uint)((uchar *)np->tf->ebp - stack_size + 32);
-  //np->tf->eip = curproc->tf->eip;
-
-  np->context->ebp = np->tf->ebp;
-  np->thread_flag = 1;
-
-  //copy over parent's stack
-
-  memmove((char *)(np->tf->esp - 16), (char *)(curproc->tf->esp - 16), stack_size);
-
+  // Copy from parent stack to child stack at child's new ESP
+  memmove((char *)(np->tf->esp), (char *)(curproc->tf->esp), stack_size);
 
   // Clear %eax so that fork returns 0 in the child.
   np->tf->eax = 0;
